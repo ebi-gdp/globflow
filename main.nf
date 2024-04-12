@@ -22,28 +22,28 @@ process download {
     path secret_key
 
     output:
-    // grab basename because decrypted data will drop .crypt4gh extension
-    path "${file(in_map.filename).baseName}*"
+    path "*"
 
     script:
     if (secret_key.name != "NO_FILE" && in_map.filename.endsWith("crypt4gh"))
       // if crypt4gh and a key -> decrypt on the fly while downloading
+      // get basename for output to drop .crypt4gh extension
       """
       java -jar /opt/globus-file-handler-cli-1.0.0.jar \
         -Dspring.config.location=${config_path},${secret_path} \
         -s "${in_map.dir_path_on_guest_collection}/${in_map.filename}" \
-        --globus_file_download_destination_path "\$PWD" \
+        -d "\$PWD/${file(in_map.filename).baseName}" \
         -l ${in_map.size} \
         --crypt4gh \
         --sk ${secret_key}
       """      
-    else 
+    else
       // else, just download the file
       """
       java -jar /opt/globus-file-handler-cli-1.0.0.jar \
         -Dspring.config.location=${config_path},${secret_path} \
         -s "${in_map.dir_path_on_guest_collection}/${in_map.filename}" \
-        --globus_file_download_destination_path "\$PWD" \
+        -d "\$PWD/${in_map.filename}" \
         -l ${in_map.size}
       """
 }
