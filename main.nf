@@ -10,9 +10,9 @@ if (!params.input) {
   error "Error: missing mandatory parameter --input"
 }
 
-process download {
+
+process download_decrypt {
     tag "${in_map.filename}"
-    container "ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.0"
     publishDir "$params.outdir", mode: "move"
 
     input:
@@ -24,28 +24,45 @@ process download {
     output:
     path "*"
 
+    when:
+    in_map.filename.endsWith(".crypt4gh") && secret_key.name != "NO_FILE"
+  
     script:
-    if (secret_key.name != "NO_FILE" && in_map.filename.endsWith("crypt4gh"))
-      // if crypt4gh and a key -> decrypt on the fly while downloading
-      // get basename for output to drop .crypt4gh extension
-      """
-      java -jar /opt/globus-file-handler-cli-1.0.0.jar \
-        -Dspring.config.location=${config_path},${secret_path} \
-        -s "${in_map.dir_path_on_guest_collection}/${in_map.filename}" \
-        -d "\$PWD/${file(in_map.filename).baseName}" \
-        -l ${in_map.size} \
-        --crypt4gh \
-        --sk ${secret_key}
-      """      
-    else
-      // else, just download the file
-      """
-      java -jar /opt/globus-file-handler-cli-1.0.0.jar \
-        -Dspring.config.location=${config_path},${secret_path} \
-        -s "${in_map.dir_path_on_guest_collection}/${in_map.filename}" \
-        -d "\$PWD/${in_map.filename}" \
-        -l ${in_map.size}
-      """
+    """
+    java -jar /opt/globus-file-handler-cli-1.0.0.jar \
+      -Dspring.config.location=${config_path},${secret_path} \
+      -s "${in_map.dir_path_on_guest_collection}/${in_map.filename}" \
+      -d "\$PWD/${file(in_map.filename).baseName}" \
+      -l ${in_map.size} \
+      --crypt4gh \
+      --sk ${secret_key}
+    """      
+}
+
+process download {
+    tag "${in_map.filename}"
+    publishDir "$params.outdir", mode: "move"
+
+    input:
+    val in_map 
+    path config_path
+    path secret_path
+    path secret_key
+
+    output:
+    path "*"
+
+    when:
+    !in_map.filename.endsWith(".crypt4gh") || secret_key.name == "NO_FILE"
+  
+    script:
+    """
+    java -jar /opt/globus-file-handler-cli-1.0.0.jar \
+      -Dspring.config.location=${config_path},${secret_path} \
+      -s "${in_map.dir_path_on_guest_collection}/${in_map.filename}" \
+      -d "\$PWD/${in_map.filename}" \
+      -l ${in_map.size}
+    """
 }
 
 workflow {
@@ -57,6 +74,9 @@ workflow {
     // this channel is a list of hashmaps, one for each file to be downloaded
     Channel.fromPath(params.input, checkIfExists: true).map { parseInput(it) }.flatten().set { ch_input }
 
+    // decryption on the fly will automatically happen if a filename ends with .crypt4gh and a --key is provided
+    download_decrypt(ch_input, config_path, secrets_path, secret_key)
+    // if --key is missing or a file doesn't end with .crypt4gh, just download
     download(ch_input, config_path, secrets_path, secret_key)
 }
 
