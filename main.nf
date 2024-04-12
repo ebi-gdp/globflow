@@ -12,7 +12,7 @@ if (!params.input) {
 
 process download {
     tag "${in_map.filename}"
-    container "nebfields/globus:1.0.0"
+    container "ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.0"
     publishDir "$params.outdir", mode: "move"
 
     input:
