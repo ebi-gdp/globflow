@@ -74,11 +74,10 @@ $ nextflow run main.nf -profile <docker/singularity>  \
   --input assets/example_input.json \
   --outdir downloads \
   --secret_key key \
-  --threads 10 
-
+  --threads 10
 ```
 
-When using a grid executor, `--threads` will control the number of jobs submitted to the scheduler.
+When using a grid executor, `--threads` will control the number of jobs submitted to the scheduler. If you want to submit lots of jobs to the scheduler, set `--threads 0`. 
 
 If you're running globflow on a desktop computer, try setting `--threads` to the number of CPUs you have. 
 
