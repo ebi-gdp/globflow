@@ -12,8 +12,13 @@ if (!params.input) {
 
 
 process download_decrypt {
+    errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
+    maxForks params.threads
     tag "${in_map.filename}"
     publishDir "$params.outdir", mode: "move"
+    container "${ workflow.containerEngine == 'singularity' ?
+        "oras://ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.0-singularity" :
+        "ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.0" }"
 
     input:
     val in_map 
@@ -22,7 +27,7 @@ process download_decrypt {
     path secret_key
 
     output:
-    path "*"
+    path "${file(in_map.filename).baseName}"
 
     when:
     in_map.filename.endsWith(".crypt4gh") && secret_key.name != "NO_FILE"
@@ -40,8 +45,13 @@ process download_decrypt {
 }
 
 process download {
+    errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
+    maxForks params.threads
     tag "${in_map.filename}"
     publishDir "$params.outdir", mode: "move"
+    container "${ workflow.containerEngine == 'singularity' ?
+        "oras://ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.0-singularity" :
+        "ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.0" }"
 
     input:
     val in_map 
@@ -50,7 +60,7 @@ process download {
     path secret_key
 
     output:
-    path "*"
+    path "${in_map.filename}"
 
     when:
     !in_map.filename.endsWith(".crypt4gh") || secret_key.name == "NO_FILE"
