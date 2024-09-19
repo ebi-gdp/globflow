@@ -15,9 +15,12 @@ if (!params.secret_key) {
 }
 
 process download_decrypt {
-    maxForks params.threads
+    errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
+    maxRetries 3
+
     tag "${in_map.filename}"
-    publishDir "$params.outdir", mode: "move"
+    // drops the "output" directory from path when publishing
+    publishDir "$params.outdir", mode: "move", saveAs: { "${file(it).getName()}" }
     container "${ workflow.containerEngine == 'singularity' ?
         "oras://ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.4-singularity" :
         "ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.4" }"
@@ -28,17 +31,21 @@ process download_decrypt {
     path secret_key, stageAs: "secret-config.json"
 
     output:
-    path "${file(in_map.filename).baseName}"
+    path "output/*"
 
     script:
     """
+    mkdir output
+    
     java -jar /opt/globus-file-handler-cli-1.0.4.jar \
       --spring.config.location=./secret.properties \
       --globus_file_transfer_source_path "globus:///${in_map.dir_path_on_guest_collection}/${in_map.filename}" \
-      --globus_file_transfer_destination_path "file:///\$PWD/${file(in_map.filename).baseName}" \
+      --globus_file_transfer_destination_path "file:///\$PWD/output/${file(in_map.filename).baseName}" \
       --file_size ${in_map.size} \
       --crypt4gh \
       --sk "file:///\$PWD/secret-config.json"
+
+    rm -f ./* 2>/dev/null || true # delete everything except output directory
     """
 }
 
