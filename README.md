@@ -90,6 +90,17 @@ intervene.key-handler.keys.uri=/key/{secretId}/version/{secretIdVersion}
 
 See the [file handler CLI](https://github.com/ebi-gdp/globus-file-handler-cli) README for a description of the configuration. 
 
+`--key` can be a crypt4gh private key path or a JSON file with the following structure:
+
+```
+{
+  "secretId": "8D705854-9EEA-44C5-9937-E4E5228B8457",
+  "secretIdVersion": "1"
+}
+```
+
+which integrates with the key handler service.
+
 ## Example use cases
 
 ### Downloading files with crypt4gh decryption on the fly
