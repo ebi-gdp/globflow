@@ -3,7 +3,7 @@
 We needed a way to:
 
 1) Reliably download files from a Globus collection over HTTPS
-2) (Optionally) decrypt them on the fly ([crypt4gh](https://github.com/EGA-archive/crypt4gh))
+2) Decrypt them on the fly ([crypt4gh](https://github.com/EGA-archive/crypt4gh))
 3) Store the plaintext files in an object store (bucket), ready for cloud based data science workflows
 
 The [file handler CLI](https://github.com/ebi-gdp/globus-file-handler-cli) takes care of 1) and 2). 
@@ -35,34 +35,62 @@ Downloaded files can also be saved to a local filesystem.
 `--config_secrets` must be a path to a spring boot application properties file with the following structure:
 
 ```
-globus.guest-collection.domain=SECRET
-globus.aai.client-id=SECRET
-globus.aai.client-secret=SECRET
-globus.aai.scopes=SECRET
+#####################################################################################
+# Application config
+#####################################################################################
+data.copy.buffer-size=8192
+#####################################################################################
+# Apache HttpClient connection config
+#####################################################################################
+webclient.connection.pipe-size=4096
+webclient.connection.connection-timeout=5
+webclient.connection.socket-timeout=0
+webclient.connection.read-write-timeout=30000
+#####################################################################################
+# File download retry config
+#####################################################################################
+# EXPONENTIAL/FIXED
+file.download.retry.strategy=FIXED
+file.download.retry.attempts.max=3
+# Exponential
+file.download.retry.attempts.delay=1000
+file.download.retry.attempts.maxDelay=30000
+file.download.retry.attempts.multiplier=2
+# Fixed
+file.download.retry.attempts.back-off-period=2000
+#####################################################################################
+# Globus config
+#####################################################################################
+globus.guest-collection.domain=<url>
+#Oauth
+globus.aai.access-token.uri=https://auth.globus.org/v2/oauth2/token
+globus.aai.client-id=<id>
+globus.aai.client-secret=<token>
+globus.aai.scopes=<url>
+#####################################################################################
+# Crypt4gh config
+#####################################################################################
+crypt4gh.binary-path=/opt/bin/crypt4gh
+crypt4gh.shell-path=/bin/bash -c
+#####################################################################################
+# Logging config
+#####################################################################################
+logging.level.uk.ac.ebi.intervene=INFO
+logging.level.org.springframework=WARN
+logging.level.org.apache.http=WARN
+logging.level.org.apache.http.wire=WARN
+#####################################################################################
+# key handler service config
+#####################################################################################
+intervene.key-handler.basic-auth=Basic <token>
+intervene.key-handler.secret-key.password=<password>
+intervene.key-handler.base-url=https://<url>/key-handler
+intervene.key-handler.keys.uri=/key/{secretId}/version/{secretIdVersion}
 ```
 
-(replace SECRET with your sensitive data)
-
-`--key` must be the secret key pair of the recipients public key. It should probably be made by the crypt4gh CLI.
+See the [file handler CLI](https://github.com/ebi-gdp/globus-file-handler-cli) README for a description of the configuration. 
 
 ## Example use cases
-
-### Downloading files to local storage in parallel
-
-```
-$ nextflow run main.nf -profile <docker/singularity> \
-  --config_secrets assets/secret.properties \
-  --input assets/example_input.json \
-  --outdir downloads \
-  --threads 10 
-```
-
-It's a good idea to:
-
-* set --threads to do multiple downloads
-* use a local executor, the overhead of submitting jobs to a grid executor like SLURM isn't worth it 
-
-By default parallel downloads are disabled (`--threads 1`).
 
 ### Downloading files with crypt4gh decryption on the fly
 
@@ -73,16 +101,8 @@ $ nextflow run main.nf -profile <docker/singularity>  \
   --config_secrets assets/secret.properties \
   --input assets/example_input.json \
   --outdir downloads \
-  --secret_key key \
-  --threads 10 
-
+  --secret_key key
 ```
-
-When using a grid executor, `--threads` will control the number of jobs submitted to the scheduler.
-
-If you're running globflow on a desktop computer, try setting `--threads` to the number of CPUs you have. 
-
-Globflow will only try to decrypt files with a `.crypt4gh` extension, and will download other files normally. 
 
 ### Downloading files to an object store (bucket) 
 
