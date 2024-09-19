@@ -17,10 +17,10 @@ if (!params.secret_key) {
 process download_decrypt {
     maxForks params.threads
     tag "${in_map.filename}"
-    publishDir "$params.outdir"
+    publishDir "$params.outdir", mode: "move"
     container "${ workflow.containerEngine == 'singularity' ?
-        "oras://ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.3-singularity" :
-        "ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.3" }"
+        "oras://ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.4-singularity" :
+        "ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.4" }"
 
     input:
     val in_map
@@ -32,7 +32,7 @@ process download_decrypt {
 
     script:
     """
-    java -jar /opt/globus-file-handler-cli-1.0.3.jar \
+    java -jar /opt/globus-file-handler-cli-1.0.4.jar \
       --spring.config.location=./secret.properties \
       --globus_file_transfer_source_path "globus:///${in_map.dir_path_on_guest_collection}/${in_map.filename}" \
       --globus_file_transfer_destination_path "file:///\$PWD/${file(in_map.filename).baseName}" \
