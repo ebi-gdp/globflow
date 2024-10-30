@@ -20,6 +20,7 @@ if (!params.secret_key) {
 }
 
 process download_decrypt_key_handler {
+    stageInMode 'copy'
     errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
     maxRetries 2
 
@@ -48,8 +49,6 @@ process download_decrypt_key_handler {
       --file_size ${in_map.size} \
       --crypt4gh \
       --sk "file:///\$PWD/secret-config.json"
-
-    rm -f ./* 2>/dev/null || true # delete everything except output directory
     """
 }
 
