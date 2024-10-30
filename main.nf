@@ -2,8 +2,13 @@
 
 import groovy.json.JsonSlurper
 
-if (!params.config_secrets) {
-  error "Error: missing mandatory parameter --config_secrets"
+
+if (!params.config_application) {
+  error "Error: missing mandatory parameter --config_application"
+}
+
+if (!params.config_crypt4gh) {
+  error "Error: missing mandatory parameter --config_crypt4gh"
 }
 
 if (!params.input) {
@@ -14,20 +19,19 @@ if (!params.secret_key) {
   error "Error: missing --secret_key"
 }
 
-process download_decrypt {
+process download_decrypt_key_handler {
     errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
-    maxRetries 3
+    maxRetries 2
 
     tag "${in_map.filename}"
     // drops the "output" directory from path when publishing
     publishDir "$params.outdir", mode: "move", saveAs: { "${file(it).getName()}" }
-    container "${ workflow.containerEngine == 'singularity' ?
-        "oras://ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.4-singularity" :
-        "ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.4" }"
+    container "ghcr.io/ebi-gdp/globus-file-handler-cli:1.0.5"
 
     input:
     val in_map
-    path secret_config, stageAs: "secret.properties"
+    path application_properties, stageAs: "application.properties"
+    path crypt4gh_properties, stageAs: "application-crypt4gh-secret-manager.properties"
     path secret_key, stageAs: "secret-config.json"
 
     output:
@@ -37,8 +41,8 @@ process download_decrypt {
     """
     mkdir output
     
-    java -jar /opt/globus-file-handler-cli-1.0.4.jar \
-      --spring.config.location=./secret.properties \
+    java -jar /opt/globus-file-handler-cli-1.0.5.jar \
+      --spring.profiles.active=crypt4gh-secret-manager \
       --globus_file_transfer_source_path "globus:///${in_map.dir_path_on_guest_collection}/${in_map.filename}" \
       --globus_file_transfer_destination_path "file:///\$PWD/output/${file(in_map.filename).baseName}" \
       --file_size ${in_map.size} \
@@ -52,12 +56,13 @@ process download_decrypt {
 workflow {
     // using first() to create reusable value channels
     Channel.fromPath(params.secret_key, checkIfExists: true).first().set { secret_key }
-    Channel.fromPath(params.config_secrets, checkIfExists: true).first().set { secrets_config_path }
+    Channel.fromPath(params.config_application, checkIfExists: true).first().set { application_properties }
+    Channel.fromPath(params.config_crypt4gh, checkIfExists: true).first().set { crypt4gh_properties }
 
     // this channel is a list of hashmaps, one for each file to be downloaded
     Channel.fromPath(params.input, checkIfExists: true).map { parseInput(it) }.flatten().set { ch_input }
 
-    download_decrypt(ch_input, secrets_config_path, secret_key)
+    download_decrypt_key_handler(ch_input, application_properties, crypt4gh_properties, secret_key)
 }
 
 

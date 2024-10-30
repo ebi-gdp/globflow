@@ -2,10 +2,6 @@
     "dir_path_on_guest_collection": "bwingfield@ebi.ac.uk/test_hapnest/",
     "files": [
         {
-            "filename": "hapnest.pvar",
-            "size": 278705850
-        },
-        {
             "filename": "hapnest.pgen.crypt4gh",
             "size": 278825058
         }
