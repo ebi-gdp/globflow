@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-transfer-config
+data:
+  input.json: {{ toJson .Values.globflowInput | quote }}
+  key.json: {{ toJson .Values.keyHandlerSecret | quote }}
+  params.yml: |
+{{- range $key, $value := .Values.globflowParams }}
+    {{ $key }}: {{ $value }}
+{{- end }}
+  nxf.config: |
+    workDir = {{ .Values.nxfParams.workBucketPath | quote }}
+
+    process {
+      executor = 'google-batch'
+      maxRetries = 1
+    }
+
+    google {
+      project = {{ .Values.nxfParams.gcpProject | quote }}
+      location = {{ .Values.nxfParams.location | quote }}
+      batch {
+        spot = {{ .Values.nxfParams.spot }}
+      }
+    }
+
+    wave {
+      enabled = {{ .Values.nxfParams.wave }}
+    }
+
+    fusion {
+      enabled =  {{ .Values.nxfParams.fusion }}
+    }
+
+    tower {
+      accessToken = {{ .Values.secrets.towerToken | quote }}
+      workspaceId = {{ .Values.secrets.towerId | quote }}
+      enabled = true
+    }
+  scm: |
+    providers {
+      ebi {
+        server = 'https://gitlab.ebi.ac.uk'
+        platform = 'gitlab'
+      }
+    }

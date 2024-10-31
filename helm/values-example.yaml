@@ -1,0 +1,53 @@
+
+
+baseImage: "docker.io/nextflow/nextflow"
+dockerTag: "24.10.0"
+pullPolicy: "IfNotPresent"
+
+serviceAccount:
+  create: true
+  name: nextflow
+
+# change for each run
+keyHandlerSecret:
+  secretId: "77451C57-0FCC-460F-91A3-E0DED05B440F"
+  secretIdVersion: "1"
+
+# change for each run
+globflowInput:
+  dir_path_on_guest_collection: test@example.com/test-collection
+  files:
+  - filename: hapnest.psam.c4gh
+    size: 8669
+  - filename: hapnest.pgen.c4gh
+    size: 278825058
+  - filename: hapnest.pvar.c4gh
+    size: 215004174
+
+globflowParams:
+  outdir: "gs://testbucket/data" # update this to point to a new bucket
+  # mostly static values below
+  input: /opt/nxf/input.json
+  secret_key: /opt/nxf/key.json
+  config_application: /opt/globflow/application.properties
+  config_crypt4gh: /opt/globflow/application-crypt4gh-secret-manager.properties
+
+# change for each deployment
+secrets:
+  globusDomain: globus-domain
+  globusClientId: secret-client-id
+  globusClientSecret: client-secret
+  towerToken: tower-token
+  towerId: "tower-id"
+  keyHandlerToken: key-handler-token
+  keyHandlerPassword: key-handler-password
+  keyHandlerURL: key-handler-url
+
+# change for each run
+nxfParams:
+  workBucketPath: "gs://testbucket/work"
+  gcpProject: "gcp-project"
+  location: "gcp-location"
+  spot: true
+  wave: true
+  fusion: true
