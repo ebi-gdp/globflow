@@ -15,9 +15,25 @@ Downloaded files can also be saved to a local filesystem.
 > [!NOTE]  
 > This workflow grabs crypt4gh secret keys from the INTERVENE key handler service, but could be adapted to work with local crypt4gh key pairs
 
+### Table of Contents
+
+- [Parameters](#parameters)
+  * [File input](#file-input)
+  * [Secret key](#secret-key)
+  * [Application properties](#application-properties)
+  * [crypt4gh application properties](#crypt4gh-application-properties)
+- [Example use cases](#example-use-cases)
+  * [Download files from a Globus collection over HTTPS](#download-files-from-a-globus-collection-over-https)
+  * [Downloading files with crypt4gh decryption on the fly](#downloading-files-with-crypt4gh-decryption-on-the-fly)
+  * [Downloading files to an object store (bucket)](#downloading-files-to-an-object-store)
+- [Helm support](#helm-support)
+
 ## Parameters
 
 ### File input
+
+> [!IMPORTANT]
+> This is parameter is mandatory
 
 `--input` must be a JSON array with the following structure:
 
@@ -35,6 +51,9 @@ Downloaded files can also be saved to a local filesystem.
 
 ### Secret key
 
+> [!IMPORTANT]
+> This is parameter is optional
+
 `--secret_key` must be a JSON file with the following structure:
 
 ```
@@ -44,6 +63,9 @@ Downloaded files can also be saved to a local filesystem.
 The secret key is used to contact the platform key handler service and grab the correct crypt4gh secret key.
 
 ### Application properties 
+
+> [!IMPORTANT]
+> This parameter is mandatory
 
 > [!TIP]
 > Be careful of trailing whitespace in properties files
@@ -97,6 +119,9 @@ See the [file handler CLI](https://github.com/ebi-gdp/globus-file-handler-cli) R
 
 ### crypt4gh application properties
 
+> [!IMPORTANT]
+> This is parameter is optional
+
 `--config_crypt4gh` must be a path to a spring boot application properties file with the following structure:
 
 ```
@@ -145,7 +170,7 @@ $ nextflow run main.nf -profile docker \
   --decrypt
 ```
 
-### Downloading files to an object store (bucket) 
+### Downloading files to an object store 
 
 It's possible to use nextflow's support for object storage to transfer files from Globus directly to a bucket:
 
