@@ -3,7 +3,7 @@
 We needed a way to:
 
 1) Reliably download files from a Globus collection over HTTPS
-2) Decrypt them on the fly ([crypt4gh](https://github.com/EGA-archive/crypt4gh))
+2) Optionally decrypt them on the fly ([crypt4gh](https://github.com/EGA-archive/crypt4gh))
 3) Store the plaintext files in an object store (bucket), ready for cloud based data science workflows
 
 The [file handler CLI](https://github.com/ebi-gdp/globus-file-handler-cli) takes care of 1) and 2). 
@@ -44,6 +44,9 @@ Downloaded files can also be saved to a local filesystem.
 The secret key is used to contact the platform key handler service and grab the correct crypt4gh secret key.
 
 ### Application properties 
+
+> [!TIP]
+> Be careful of trailing whitespace in properties files
 
 `--config_application` must be a path to a spring boot application properties file with the following structure:
 
@@ -115,6 +118,18 @@ See the [file handler CLI](https://github.com/ebi-gdp/globus-file-handler-cli) R
 
 ## Example use cases
 
+> [!TIP]
+> `--debug` can be helpful to keep files containing sensitive data if you're having problems with a transfer (disabled by default)
+
+### Download files from a Globus collection over HTTPS 
+
+```
+$ nextflow run main.nf -profile docker \
+  --input input.json \
+  --config_application application.properties \
+  --outdir downloads
+```
+
 ### Downloading files with crypt4gh decryption on the fly
 
 It makes sense to submit these jobs to [a grid executor](https://www.nextflow.io/docs/latest/executor.html), like SLURM or cloud batch, because decryption on the fly will use ~1 CPU for each file:
@@ -126,7 +141,8 @@ $ nextflow run main.nf -profile docker \
   --config_application application.properties \
   --config_crypt4gh application-crypt4gh-secret-manager.properties \
   --config_secrets assets/secret.properties \
-  --outdir downloads
+  --outdir downloads \
+  --decrypt
 ```
 
 ### Downloading files to an object store (bucket) 
@@ -174,3 +190,9 @@ google {
     }
 }
 ```
+
+## Helm support
+
+`helm/` contains a [helm chart](https://helm.sh/docs/topics/charts/) which can install a [Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/) to a Kubernetes cluster. 
+
+In the helm chart worker processes run in Cloud Batch by default with crypt4gh decryption on the fly enabled.
